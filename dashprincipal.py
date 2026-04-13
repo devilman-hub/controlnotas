@@ -1,16 +1,44 @@
+from grpc import server
 import pandas as pd
 import plotly.express as px
 import os
 import dash
 from dash import html, Input, Output, dcc, dash_table
-from database import obtenerestudiantes
+from database import obtener_estudiantes
 from flask import session
 
-#Ruta para Cargar desde la Base de Datos.
+#----- Ruta para Cargar desde la Base de Datos. -----
+
 def creartablero(server):
 
+
+#----- Inicializar la App. -----
+
+  appnotas = dash.Dash(__name__, server=server, url_base_pathname="/dashprincipal/", suppress_callback_exceptions=True)
+
+
+#----- Cargar Datos Iniciales. -----
+
+_init = obtener_estudiantes()
+
+
+#----- Renderizar del Dashboard. -----
+
+appnotas.layout = html.Div([
+
+   html.H1("Tablero Avanzado", style={"textAlign": "center", 
+                                       "backgroundColor": "#1E1BD2", 
+                                       "color": "white", 
+                                       "padding": "20px"}),
+
+
+
+
+]),
+
+
    # Cargar Datos Iniciales.
-   dataf = obtenerestudiantes()
+   dataf = obtener_estudiantes()
 
    #Correción para la Ñ.
    dataf.columns = dataf.columns.str.replace("ñ", "n")

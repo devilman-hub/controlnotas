@@ -215,245 +215,130 @@ def carga_masiva():
             df["Promedio"] = ((df["Nota1"] + df["Nota2"] + df["Nota3"]) / 3).round(2)
             df = df[df["Promedio"] <= 5]
 
+            df["Desempeno"] = df["Promedio"].apply(calcular_desempeno)
 
-            #
+
+             #----- Insertar Datos. -----
+              
+            conexion = conectar()
+            cursor = conexion.cursor()
+
+            query = """INSERTO INTO estudiantes (Nombre, Edad, Carrera, nota1, nota2, nota3, Promedio, Desempeño) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
+
+            existentes = obtener_estudiantes()[["Nombre", "Carrera"]]
+            df = df[~df.apply(lambda r: ((existentes["Nombre"] == r["Nombre"]) & (existentes["Carrera"] == r["Carrera"])).any(), axis=1)]
 
 
+            for _, row in df.iterrows():
+                cursor.execute(query, (
+                    row["Nombre"],
+                    row["Edad"],
+                    row["Carrera"],
+                    row["Nota1"],
+                    row["Nota2"],
+                    row["Nota3"],
+                    row["Promedio"],
+                    row["Desempeno"]
+                ))
+
+                conexion.commit()
+                conexion.close()
+
+
+                #----- Contar por Categoría. -----
+
+                total_insertados = len(df)
+                total_faltantes = len(faltantes) if not faltantes.empty else 0
+                total_edad = len(edad_negativa) if not edad_negativa.empty else 0
+                total_notas = len(notas_invalidas) if not notas_invalidas.empty else 0
+                total_duplicados = len(duplicados) if not duplicados.empty else 0
+                total_existentes = len(ya_existen) if not ya_existen.empty else 0
+                total_rechazados = total_faltantes + total_edad + total_notas + total_duplicados + total_existentes
+
+
+                #----- Generar Archivo de Rechazados. -----
+
+                if rechazados:
+                    df_rechazados = pd.concat(rechazados, ignore_index=True)
+                    ruta = "rechazados.xlsx"
+                    df_rechazados.to_excel(ruta, index=False)
+                    hay_rechazados = True
+                else:
+                    hay_rechazados = False
+
+                    
+                return render_template("carga_masiva.html",
+                                       insertados = total_insertados,
+                                       hay_rechazados = hay_rechazados,
+                                       resumen = [
+                                           {"categoria": "Insertados", "cantidad": total_insertados},
+                                             {"categoria": "Rechazados", "cantidad": total_rechazados},
+                                             {"categoria": "Datos Faltantes", "cantidad": total_faltantes},
+                                       ])
+            
+            return render_template("carga_masiva.html")
         
+        
+                #----- Descargar Archivo de Rechazados. -----
 
-    
-
-
-
-
-
-# ======================= DASHBOARD ========================
-
-@app.route("/dashprincipal")
-def dashprinci():
-    
-    if "username" not in session:
-        return redirect("/")
-
-    return render_template("dashprinci.html", usuario=session["username"])
+@app.route("/descargar_rechazados")
+def descargar_rechazados():
+    return send_file("rechazados.xlsx", as_attachment=True, download_name="rechazados.xlsx")
 
 
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect("/")
-
-# ======================= VALIDAR DUPLICADOS ========================
-
-def estudiante_existe(nombre, carrera):
-
-    conn = conectar()
-    cursor = conn.cursor()
-
-    query = """
-    SELECT COUNT(*)
-    FROM estudiantes
-    WHERE Nombre = %s AND Carrera = %s
-    """
-
-    cursor.execute(query,(nombre,carrera))
-
-    resultado = cursor.fetchone()[0]
-
-    conn.close()
-
-    return resultado > 0
-
-# ======================= REGISTRO MANUAL ========================
-
-@app.route("/registro_estudiante", methods=["GET","POST"])
-def registroestudiante():
-
-    if "username" not in session:
-        return redirect("/")
-
-    if request.method == "POST":
-
-        nombre = request.form["nombre"]
-        edad = int(request.form["edad"])
-        carrera = request.form["carrera"]
-
-        nota1 = float(request.form["nota1"])
-        nota2 = float(request.form["nota2"])
-        nota3 = float(request.form["nota3"])
-
-        promedio = round((nota1 + nota2 + nota3)/3,2)
-
-        desempeno = calculardesempeno(promedio)
-
-        # Validar duplicados
-
-        if estudiante_existe(nombre,carrera):
-
-            flash("El estudiante ya está registrado")
-
-        else:
-
-            insertar_estudiante(nombre,edad,carrera,nota1,nota2,nota3,promedio,desempeno)
-
-            flash(f"Estudiante {nombre} registrado correctamente")
-
-        return redirect("/dashprincipal")
-
-    return render_template("registro_estudiante.html")
-
-# ======================= QUITAR ACENTOS ========================
+                #----- Función para quitar Acentos. -----
 
 def quitar(texto):
-
     if pd.isna(texto):
         return texto
-
+    
     texto = str(texto)
 
     return ''.join(
-        c for c in unicodedata.normalize('NFD',texto)
+        
+        c for c in unicodedata.normalize('NFD', texto)
         if unicodedata.category(c) != 'Mn'
     )
 
-# ======================= CALCULAR DESEMPEÑO ========================
 
-def calculardesempeno(promedio):
+                 #----- Función para quitar Acentos. -----
 
-    if promedio >= 5:
-        return "Excelente"
-    elif promedio >= 4.5:
-        return "Bueno"
+
+def calcular_desempeno(promedio):
+
+    if promedio >= 4.5:
+        desempeno = "Excelente"
     elif promedio >= 4:
-        return "Regular"
+        desempeno = "Bueno"
+    elif promedio >= 3:
+        desempeno = "Regular"
     else:
-        return "Bajo"
+       desempeno = "Deficiente"
 
-# ======================= CARGA MASIVA ========================
+       return desempeno
+    
+
+                   #----- Obtener todas las Carreras. -----
 
 
-        for index, fila in df.iterrows():
+@app.route("/obtener_carreras")
+def ruta_obtener_carreras():
+    carreras = obtener_carreras()
+    return jsonify(carreras)
 
-            nombre = fila["Nombre"]
-            edad = fila["Edad"]
-            carrera = fila["Carrera"]
 
-            n1 = fila["Nota1"]
-            n2 = fila["Nota2"]
-            n3 = fila["Nota3"]
+                    #----- Llamado al Servidor. -----
 
-            # Validar datos faltantes
-
-            if pd.isna(nombre) or pd.isna(edad) or pd.isna(carrera):
-
-                fila["Motivo"] = "Datos faltantes"
-                rechazados.append(fila)
-                rechazados_count += 1
-                continue
-
-            # Edad negativa
-
-            if edad < 0:
-
-                fila["Motivo"] = "Edad negativa"
-                rechazados.append(fila)
-                rechazados_count += 1
-                continue
-
-            # Notas inválidas
-
-            if n1 < 0 or n1 > 5 or n2 < 0 or n2 > 5 or n3 < 0 or n3 > 5:
-
-                fila["Motivo"] = "Notas inválidas"
-                rechazados.append(fila)
-                rechazados_count += 1
-                continue
-
-            # Validar duplicados
-
-            if estudiante_existe(nombre,carrera):
-
-                fila["Motivo"] = "Estudiante duplicado"
-                rechazados.append(fila)
-                duplicados += 1
-                continue
-
-            promedio = round((n1+n2+n3)/3,2)
-
-            desempeno = calculardesempeno(promedio)
-
-            insertar_estudiante(nombre,edad,carrera,n1,n2,n3,promedio,desempeno)
-
-            insertados += 1
-
-        # Generar Excel de rechazados
-
-        if len(rechazados) > 0:
-
-            df_rechazados = pd.DataFrame(rechazados)
-
-            df_rechazados.to_excel("rechazados.xlsx",index=False)
-
-        flash(f"""
-        Resultado del cargue masivo
-
-        Insertados: {insertados}
-        Rechazados: {rechazados_count}
-        Duplicados: {duplicados}
-        """)
-
-        return render_template("carga_masiva.html")
-
-    return render_template("carga_masiva.html")
-
-# ======================= RANKING TOP 10 ========================
-
-@app.route("/ranking")
-
-def ranking():
-
-    conn = conectar()
-    cursor = conn.cursor(dictionary=True)
-
-    query = """
-    SELECT Nombre, Carrera, Promedio
-    FROM estudiantes
-    ORDER BY Promedio DESC
-    LIMIT 10
-    """
-
-    cursor.execute(query)
-
-    ranking = cursor.fetchall()
-
-    conn.close()
-
-    return render_template("ranking.html", ranking=ranking)
-
-# ======================= ALERTA ESTUDIANTES EN RIESGO ========================
-
-@app.route("/riesgo")
-
-def estudiantes_riesgo():
-
-    conn = conectar()
-    cursor = conn.cursor(dictionary=True)
-
-    query = """
-    SELECT Nombre, Carrera, Promedio
-    FROM estudiantes
-    WHERE Promedio < 3
-    """
-
-    cursor.execute(query)
-
-    riesgo = cursor.fetchall()
-
-    conn.close()
-
-    return render_template("riesgo.html", riesgo=riesgo)
-
-# ======================= MAIN ========================
 
 if __name__ == "__main__":
+    try:
+        conexion = conectar()
+        print("Conexión Exitosa a la Base de Datos.")
+        conexion.close()
+    except Exception as e:
+        print(f"Error al Conectar a la Base de Datos: {e}")
+
     app.run(debug=True)
+
+
+
