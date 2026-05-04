@@ -11,7 +11,7 @@ def conectar():
     return conexion
 
 #Obtener Usuarios.
-def  obtenerusuarios(username):
+def  obtener_usuarios(username):
      #Conectar a la Base de Datos.
         conn = conectar()
         cursor = conn.cursor(dictionary = True)
@@ -22,7 +22,7 @@ def  obtenerusuarios(username):
         return usuario
 
 #Obtener los Estudiantes.
-def obtenerestudiantes():
+def obtener_estudiantes():
      conn = conectar()
      query = "SELECT * FROM estudiantes"
      df = pd.read_sql(query, conn)

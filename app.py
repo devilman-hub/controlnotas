@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, session, jsonify, send_file
 import mysql.connector
-from database import conectar, obtener_usuario, insertar_estudiante
+from database import conectar, obtener_usuario, insertar_estudiante, buscar_estudiante, obtener_estudiantes, obtener_carreras
 from dashprincipal import crear_tablero
 import pandas as pd
 import unicodedata
