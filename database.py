@@ -8,30 +8,34 @@ def conectar():
         password = "",
         database = "notas"
     )
+
     return conexion
 
 #Obtener Usuarios.
 def  obtener_usuario(username):
      #Conectar a la Base de Datos.
-        conn = conectar()
-        cursor = conn.cursor(dictionary = True)
+        conexion = conectar()
+        cursor = conexion.cursor(dictionary = True)
 
         #Buscar el Usuario en la Base de Datos.
         cursor.execute("SELECT * FROM usuarios WHERE username = %s",(username,))
         usuario = cursor.fetchone()
 
-        conn.close()
+        conexion.close()
 
         return usuario
 
+
 #Obtener los Estudiantes.
 def obtener_estudiantes():
-     conn = conectar()
+     conexion = conectar()
      query = "SELECT * FROM estudiantes"
-     df = pd.read_sql(query, conn)
-     conn.close()
+
+     df = pd.read_sql(query, conexion)
+     conexion.close()
 
      return df
+
 
 #Buscar Estudiante por Nombre y Carrera.
 def buscar_estudiante(nombre, carrera):
@@ -53,7 +57,7 @@ def insertar_estudiante(Nombre, Edad, Carrera, nota1, nota2, nota3, Promedio, De
      conexion = conectar()
      cursor = conexion.cursor()
 
-     query = """INSERT INTO estudiantes (Nombre, Edad, Carrera, nota1, nota2, nota3, Promedio, Desempeño) values (%s, %s, %s, %s, %s, %s, %s, %s)"""
+     query = """INSERT INTO estudiantes (Nombre, Edad, Carrera, nota1, nota2, nota3, Promedio, Desempeño) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
      
      cursor.execute(query, (Nombre, Edad, Carrera, nota1, nota2, nota3, Promedio, Desempeño))
      conexion.commit()
@@ -61,38 +65,18 @@ def insertar_estudiante(Nombre, Edad, Carrera, nota1, nota2, nota3, Promedio, De
      conexion.close()
 
 
-#Función Nueva ---- Verificar si el Estudiante ya existe en el Sistema.
-
-def estudiante_existe(nombre, carrera):
-
-    conn = conectar()
-    cursor = conn.cursor()
-
-    query = """
-    SELECT COUNT(*) 
-    FROM estudiantes
-    WHERE Nombre = %s AND Carrera = %s
-    """
-
-    cursor.execute(query, (nombre, carrera))
-    resultado = cursor.fetchone()[0]
-
-    conn.close()
-
-    return resultado > 0
-
-
 #Registrar Estudiante.
 def insertar_estudiante(Nombre, Edad, Carrera, nota1, nota2, nota3, Promedio, Desempeño):
     
      conexion = conectar()
-     cursor = conn.cursor()
+     cursor = conexion.cursor()
 
-     query = """INSERT INTO estudiantes (Nombre, Edad, Carrera, nota1, nota2, nota3, Promedio, Desempeño) values (%s, %s, %s, %s, %s, %s, %s, %s)"""
+     query = """INSERT INTO estudiantes (Nombre, Edad, Carrera, nota1, nota2, nota3, Promedio, Desempeño) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
      
      cursor.execute(query,(Nombre, Edad, Carrera, nota1, nota2, nota3, Promedio, Desempeño))
-     
+
      conexion.commit()
+     
      conexion.close()
 
 

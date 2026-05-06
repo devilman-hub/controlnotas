@@ -1,11 +1,57 @@
 <!DOCTYPE html>
-
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <title>Carga Masiva de Estudiantes</title>
 
+</head>
+
+<body>
+
+
+<h1>Carga Masiva de Estudiantes</h1>
+
+<!-- FORMULARIO -->
+<form action="/carga_masiva" method="POST" enctype="multipart/form-data">
+    <div class="contenedor">
+        
+        <label>Seleccionar Archivo Excel</label><br>
+        <input type="file" name="archivo" id="archivo" required>
+        <br>
+        <button type="submit">Subir Archivo</button>
+    </div>
+
+</form>
+
+
+{% if resumen %}
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Resultado</th>
+                <th>Cantidad</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for fila in resumen %}
+            <tr>
+                <td>{{ fila.categoria }}</td>
+                <td>{{ fila.cantidad }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    {% if hay_rechazados %}
+        <a href="/descargar_rechazados">⬇️ Descargar registros rechazados</a>
+    {% endif %}
+
+</body>
+
+
 <style>
+
     body{
         font-family: Arial, Helvetica, sans-serif;
         background:#f4f4f4;
@@ -56,41 +102,4 @@
 </style>
 
 
-</head>
-
-<body>
-
-<div class="contenedor">
-
-
-<h1>Carga Masiva de Estudiantes</h1>
-
-<!-- MENSAJES DEL SISTEMA -->
-{% with messages = get_flashed_messages() %}
-    {% if messages %}
-        {% for message in messages %}
-            <div class="mensaje">
-                {{ message }}
-            </div>
-        {% endfor %}
-    {% endif %}
-{% endwith %}
-
-<!-- FORMULARIO -->
-<form action="/cargamasiva" method="POST" enctype="multipart/form-data">
-
-    <label>Seleccionar Archivo Excel</label><br>
-
-    <input type="file" name="archivo" required>
-
-    <br>
-
-    <button type="submit">Subir Archivo</button>
-
-</form>
-
-
-</div>
-
-</body>
 </html>

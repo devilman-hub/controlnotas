@@ -28,14 +28,14 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `estudiantes` (
-  `id` int(11) NOT NULL,
+  `id` int(5) NOT NULL,
   `Nombre` varchar(100) DEFAULT NULL,
-  `Edad` int(11) DEFAULT NULL,
+  `Edad` int(2) DEFAULT NULL,
   `Carrera` varchar(100) DEFAULT NULL,
-  `nota1` decimal(3,2) DEFAULT NULL,
-  `nota2` decimal(3,2) DEFAULT NULL,
-  `nota3` decimal(3,2) DEFAULT NULL,
-  `Promedio` decimal(3,2) DEFAULT NULL,
+  `nota1` decimal(19,0) DEFAULT NULL,
+  `nota2` decimal(19,0) DEFAULT NULL,
+  `nota3` decimal(19,0) DEFAULT NULL,
+  `Promedio` decimal(19,0) DEFAULT NULL,
   `Desempeño` varchar(20) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -103,21 +103,18 @@ INSERT INTO `estudiantes` (`id`, `Nombre`, `Edad`, `Carrera`, `nota1`, `nota2`, 
 --
 
 CREATE TABLE `usuarios` (
-  `id` int(11) NOT NULL,
-  `username` varchar(50) DEFAULT NULL,
+  `id` int(5) NOT NULL,
+  `username` varchar(100) DEFAULT NULL,
   `password` varchar(100) DEFAULT NULL,
-  `rol` varchar(20) DEFAULT NULL,
-  `carrera` varchar(100) DEFAULT NULL
+  `rol` varchar(100) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Volcado de datos para la tabla `usuarios`
 --
 
-INSERT INTO `usuarios` (`id`, `username`, `password`, `rol`, `carrera`) VALUES
-(1, 'admin', 'aaa', 'administrador', NULL),
-(2, 'docente1', 'abcd', 'docente', 'Ingeniería'),
-(3, 'docente2', 'abcd', 'docente', 'Administración');
+INSERT INTO `usuarios` (`id`, `username`, `password`, `rol`) VALUES
+(1, 'admin', '12345', 'Administrador');
 
 --
 -- Índices para tablas volcadas
@@ -144,13 +141,13 @@ ALTER TABLE `usuarios`
 -- AUTO_INCREMENT de la tabla `estudiantes`
 --
 ALTER TABLE `estudiantes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=52;
+  MODIFY `id` int(5) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=52;
 
 --
 -- AUTO_INCREMENT de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(5) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

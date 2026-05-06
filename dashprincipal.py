@@ -1,4 +1,3 @@
-from grpc import server
 import pandas as pd
 import plotly.express as px
 import os
@@ -7,65 +6,37 @@ from dash import html, Input, Output, dcc, dash_table
 from database import obtener_estudiantes
 from flask import session
 
-#----- Ruta para Cargar desde la Base de Datos. -----
-
 def crear_tablero(server):
 
-    #----- Cargar Datos Iniciales. -----
-    dataf = obtener_estudiantes()
-
-    #----- Inicializar la App. -----
-
-    #Correción para la Ñ.
-    dataf.columns = dataf.columns.str.replace("ñ", "n")
-
-    dataf.columns = dataf.columns.str.lower()
-
-    #Iniciar App.
     appnotas = dash.Dash(__name__, server=server, url_base_pathname="/dashprincipal/", suppress_callback_exceptions=True)
 
-    #----- Cargar Datos Iniciales. -----
-    _init = dataf
-
-    #----- Renderizar del Dashboard. -----
+    _init = obtener_estudiantes()
 
     appnotas.layout = html.Div([
 
-        html.H1("Tablero Avanzado", style={"textAlign": "center", 
-                                        "backgroundColor": "#1E1BD2", 
-                                        "color": "white", 
-                                        "padding": "20px",
-                                        "borderRadius": "10px"}),
+        html.H1("Tablero Avanzado", style={"textAlign": "center","backgroundColor": "#2D2C5D","color": "white","padding": "20px","borderRadius": "10px"}),
 
         html.Div([
-            html.Label("Seleccionar Carrera", style={"fontSize": "18px", "fontWeight": "bold"}),
+            html.Label("Seleccionar Carrera"),
 
-            #----- Filtro por Carrera. -----
             dcc.Dropdown(
                 id="filtro_carrera",
                 options=[{"label": "Todas", "value": "Todas"}] +
-                [{"label": c, "value": c} for c in sorted(_init["carrera"].unique())],
+                [{"label": c, "value": c} for c in sorted(_init["Carrera"].unique())],
                 value="Todas",
             ),
 
             html.Br(),
 
-            html.Label("Rango de Edad", style={"fontSize": "18px", "fontWeight": "bold"}),
-
-            #----- Filtro por Rango de Edad. -----
             dcc.RangeSlider(
                 id="slider_edad",
                 step=1,
-                min=_init["edad"].min(),
-                max=_init["edad"].max(),
-                value=[_init["edad"].min(), _init["edad"].max()],
-                marks={i: str(i) for i in range(int(_init["edad"].min()), int(_init["edad"].max()) + 1, 5)},
-                tooltip={"placement": "bottom", "always_visible": True}
+                min=_init["Edad"].min(),
+                max=_init["Edad"].max(),
+                value=[_init["Edad"].min(), _init["Edad"].max()],
             ),
 
             html.Br(),
-
-            html.Label("Rango Promedio", style={"fontSize": "18px", "fontWeight": "bold"}),
 
             dcc.RangeSlider(
                 id="slider_promedio",
@@ -73,144 +44,113 @@ def crear_tablero(server):
                 max=5,
                 step=0.1,
                 value=[0, 5],
-                tooltip={"placement": "bottom", "always_visible": True},
             ),
 
-        ], style={"width": "80%", "margin": "auto", "backgroundColor": "#f0f0f0", "padding": "20px", "borderRadius": "10px"}),
+        ]),
 
-        html.Br(),
+        html.Div(id="kpis"),
 
-        #----- Contenedor para KPIs. -----
-        html.Div(id="kpis", style={"display": "flex", "justifyContent": "space-around"}),
-
-        html.Br(),
-
-        #----- Barra de Búsqueda. -----
-        dcc.Input(
-            id="busqueda",
-            type="text",
-            placeholder="Buscar Estudiante...",
-            style={
-                "width": "100%",
-                "padding": "10px",
-                "fontSize": "16px", 
-                "borderRadius": "5px",
-                "border": "1px solid #ccc"}
-        ),
-
-        html.Br(),
+        dcc.Input(id="busqueda"),
 
         dcc.Interval(id="intervalo", interval=30000, n_intervals=0),
-        dcc.Interval(id="intervalo_kpis", interval=30000, n_intervals=0),
 
-        html.Br(),
+        dash_table.DataTable(id="tabla"),
 
-        #----- Tabla con los Estudiantes. -----
-        dcc.Loading(
-            children=[
-                dash_table.DataTable(
-                    id="tabla",
-                    page_size=8,
-                    filter_action="native",
-                    sort_action="native",
-                    row_selectable="multi",
-                    selected_rows=[],
-                    style_table={"overflowX": "auto"},
-                    style_cell={"textAlign": "center", "padding": "10px"},
-                    style_header={
-                        "backgroundColor": "#1E1BD2",
-                        "color": "white",
-                        "fontWeight": "bold"
-                    },
-                    style_data_conditional=[
-                        {"if": {"row_index": "odd"}, "backgroundColor": "#f9f9f9"}
-                    ],
-                ),
+        dcc.Graph(id="gran_detallado"),
 
-                html.Br(),
+        dcc.Graph(id="histograma"),
+        dcc.Graph(id="dispersion"),
+        dcc.Graph(id="pie"),
+        dcc.Graph(id="promedio_carrera"),
 
-                dcc.Graph(id="gra_detallado"),
+        dash_table.DataTable(id="ranking"),
+        dash_table.DataTable(id="riesgo"),
+    ])
 
-                #----- Gráficos Detallados. -----
-                dcc.Tabs([
-                    dcc.Tab(label="Histograma Promedios", children=[dcc.Graph(id="histograma")]),
-                    dcc.Tab(label="Dispersión Edad Vs. Nota", children=[dcc.Graph(id="dispersion")]),
-                    dcc.Tab(label="Desempeño Por Carrera", children=[dcc.Graph(id="pie")]),
-                    dcc.Tab(label="Histograma Promedios", children=[dcc.Graph(id="promedio_carrera")])
-                ]),
+    # ---------- TABLA ----------
+    @appnotas.callback(
+        Output("tabla", "data"),
+        Output("tabla", "columns"),
+        Output("kpis", "children"),
+        Input("filtro_carrera", "value"),
+        Input("slider_edad", "value"),
+        Input("slider_promedio", "value"),
+        Input("busqueda", "value"),
+        Input("intervalo", "n_intervals"),   # 🔥 clave
+    )
+    def actualizar_comp(carrera, rangoedad, rangoprome, busqueda, n):
 
-                #----- Tabla de los Mejores 10 Estudiantes. -----
-                html.H3("Top 10 Estudiantes", style={"textAlign": "center", "marginTop": "40px"}),
-                dash_table.DataTable(id="ranking", page_size=10),
+        dataf = obtener_estudiantes()
 
-                html.Br(),
-
-                #----- Tabla con Estudiantes en Riesgo. -----
-                html.H3("Estudiantes en Riesgo", style={"textAlign": "center", "marginTop": "40px"}),
-                dash_table.DataTable(id="riesgo", page_size=10),
+        if carrera == "Todas":
+            filtro = dataf[
+                (dataf["Edad"] >= rangoedad[0]) &
+                (dataf["Edad"] <= rangoedad[1]) &
+                (dataf["Promedio"] >= rangoprome[0]) &
+                (dataf["Promedio"] <= rangoprome[1])
             ]
-        ),
+        else:
+            filtro = dataf[
+                (dataf["Carrera"] == carrera) &
+                (dataf["Edad"] >= rangoedad[0]) &
+                (dataf["Edad"] <= rangoedad[1]) &
+                (dataf["Promedio"] >= rangoprome[0]) &
+                (dataf["Promedio"] <= rangoprome[1])
+            ]
 
-        #----- Botón para Cerrar Sesión. -----
-        html.A("Cerrar Sesión", href="/cerrar_sesion"),
+        # 🔍 búsqueda segura
+        if busqueda:
+            filtro = filtro[filtro.apply(lambda row: busqueda.lower() in str(row).lower(), axis=1)]
 
-        #----- Botón para Registrar Nuevo Estudiante. -----
-        html.A("Registrar Estudiante", href="/opciones_registro"),
+        columnas = [{"name": i, "id": i} for i in filtro.columns]
 
-    ], style={"fontFamily": "Times New Roman"})
+        return filtro.to_dict("records"), columnas, []
 
-
-    #----- Callback y función para Actualizar la Tabla y los Gráficos. -----
-
+    # ---------- GRÁFICOS ----------
     @appnotas.callback(
-        Output("gra_detallado", "figure"),
-        Input("tabla", "derived_virtual_data"),
-        Input("tabla", "derived_virtual_selected_rows"),
-        Input("intervalo", "n_intervals"),
+        Output("histograma", "figure"),
+        Output("dispersion", "figure"),
+        Output("pie", "figure"),
+        Output("promedio_carrera", "figure"),
+        Input("filtro_carrera", "value"),
+        Input("intervalo", "n_intervals"),   # 🔥 clave
     )
-    def actualizartab(rows, selected_rows, n_intervals):
+    def actualizar_graficos(carrera, n):
 
-        if not rows:
-            return px.scatter(title="Sin Datos")
-
-        dff = pd.DataFrame(rows)
-
-        if selected_rows:
-            dff = dff.iloc[selected_rows]
-
-        fig = px.scatter(dff, x="edad", y="promedio")
-
-        return fig
-
-
-    #----- Callback y función para Actualizar el Dropdown de Carreras. -----
-
-    @appnotas.callback(
-        Output("filtro_carrera", "options"),
-        Input("intervalo", "n_intervals"),
-    )
-    def actualizar_carreras(n_intervals):
         dataf = obtener_estudiantes()
-        carreras = sorted(dataf["carrera"].unique())
-        return [{"label": "Todas", "value": "Todas"}] + [{"label": c, "value": c} for c in carreras]
 
+        if carrera == "Todas" or carrera is None:
+            df_carrera = dataf
+        else:
+            df_carrera = dataf[dataf["Carrera"] == carrera]
 
-    #----- Callback y función para Actualizar el Dropdown de Edades. -----
+        fig_hist = px.histogram(df_carrera, x="Promedio")
+        fig_disp = px.scatter(df_carrera, x="Edad", y="Promedio")
+        fig_pie = px.pie(df_carrera, names="Desempeño")
+        fig_bar = px.bar(dataf, x="Carrera", y="Promedio")
 
+        return fig_hist, fig_disp, fig_pie, fig_bar
+
+    # ---------- RANKING ----------
     @appnotas.callback(
-        Output("slider_edad", "min"),
-        Output("slider_edad", "max"),
-        Output("slider_edad", "value"),
-        Output("slider_edad", "marks"),
+        Output("ranking", "data"),
+        Output("ranking", "columns"),
         Input("intervalo", "n_intervals"),
     )
-    def actualizar_edades(n_intervals):
-        dataf = obtener_estudiantes()
-        min_e = int(dataf["edad"].min())
-        max_e = int(dataf["edad"].max())
-        marks = {i: str(i) for i in range(min_e, max_e + 1, 5)}
-        return min_e, max_e, [min_e, max_e], marks
+    def actualizar_ranking(n):
+        df = obtener_estudiantes()
+        top = df.sort_values("Promedio", ascending=False).head(10)
+        return top.to_dict("records"), [{"name": i, "id": i} for i in top.columns]
 
+    # ---------- RIESGO ----------
+    @appnotas.callback(
+        Output("riesgo", "data"),
+        Output("riesgo", "columns"),
+        Input("intervalo", "n_intervals"),
+    )
+    def actualizar_riesgo(n):
+        df = obtener_estudiantes()
+        riesgo = df[df["Promedio"] < 3]
+        return riesgo.to_dict("records"), [{"name": i, "id": i} for i in riesgo.columns]
 
-    #----- Exportar todo el Dashboard. -----
     return appnotas

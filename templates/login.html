@@ -1,19 +1,87 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
 </head>
 <body>
 
-    <h2>Iniciar Sesión</h2>
+    <h1>Login</h1>
 
-    <form method="POST">
-        Usuario: <input type="text" name="username"><br><br>
-        Contraseña: <input type="password" name="password"><br><br>
-        
-        <button type="submit">¡Ingresar!</button>
+    <form action="/" method="POST">
+        <div class="caja_input">
+            <label for="username">Usser</label>
+            <input type="text" name="username" id="username">
+        </div>
 
+        <div class="caja_input">
+            <label for="password">Password</label>
+            <input type="password" name="password" id="password">
+            <button type="button" id="ver_password">ver</button>
+        </div>
+
+        <button id="btn_entrar" type="submit">Entrar</button>
     </form>
 
 </body>
+
+<style>
+    body{
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        align-content: center;
+    }
+    form{
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 20px;
+        border-radius: 20px;
+        border: solid 1px rgb(26, 23, 67);
+        box-shadow: rgb(70, 71, 132) 0px 2px 5px;
+    }
+    .caja_input{
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+    }
+    #btn_entrar{
+        background-color: rgb(51, 40, 87);
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        border-radius: 10px;
+        cursor: pointer;
+    }
+</style>
+
+<script>
+
+    let ver = false;
+    const input_password = document.getElementById('password');
+    let btn_ver_password = document.getElementById('ver_password');
+
+    document.getElementById('ver_password').addEventListener('click', () => {
+        if(ver === false){
+            input_password.type = "text";
+            btn_ver_password.innerText = "Ocultar";
+            ver = true;
+        }
+        else{
+            input_password.type = "password";
+            btn_ver_password.innerText = "Ver";
+            ver = false;
+        }
+    });
+
+
+</script>
+
 </html>
